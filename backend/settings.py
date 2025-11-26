@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-l8&(3f8spt5+y08h!gvet)p@-k$&t=@#%h_2o-0!io6q8dwxjo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://heroic-unauthoritative-jonelle.ngrok-free.dev', # <--- TU URL EXACTA
+    'http://localhost:5173',
+]
 
 #AUTH_USER_MODEL = 'api.Usuario'
 
@@ -46,11 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-ORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:4200',
-    'http://localhost:5173/',
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # <--- DEBE SER EL PRIMERO (o lo más arriba posible)
