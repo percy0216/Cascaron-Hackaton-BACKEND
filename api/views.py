@@ -115,27 +115,31 @@ class RegistrarVentaView(APIView):
 # =================================================
 # 4. DASHBOARD
 # =================================================
+# backend/api/views.py (Solo la clase DashboardView)
+
 class DashboardView(APIView):
     def get(self, request):
         hoy = timezone.now().date()
+        qs = Venta.objects.filter(fecha__date=hoy)
         
-        ventas_hoy_qs = Venta.objects.filter(fecha__date=hoy)
-        total_ventas = ventas_hoy_qs.aggregate(Sum('total_venta'))['total_venta__sum'] or 0
-        ganancia_dia = ventas_hoy_qs.aggregate(Sum('ganancia_total'))['ganancia_total__sum'] or 0
+        # --- LÓGICA DE STOCK MEJORADA ---
+        stock_bajos_qs = Producto.objects.filter(stock_actual__lte=F('stock_minimo'))
+        stock_bajo_count = stock_bajos_qs.count()
+        # Obtenemos los nombres de los primeros 3 productos en peligro
+        low_stock_names = list(stock_bajos_qs.values_list('nombre', flat=True)[:3])
         
-        stock_bajo = Producto.objects.filter(stock_actual__lte=F('stock_minimo')).count()
+        total = qs.aggregate(Sum('total_venta'))['total_venta__sum'] or 0
+        ganancia = qs.aggregate(Sum('ganancia_total'))['ganancia_total__sum'] or 0
         
         return Response({
             "kpis": {
-                "ventas_hoy": f"S/ {total_ventas:.2f}",
-                "ganancia_hoy": f"S/ {ganancia_dia:.2f}",
-                "pedidos_hoy": ventas_hoy_qs.count(),
-                "productos_stock_bajo": stock_bajo
+                "ventas_hoy": f"S/ {total:.2f}",
+                "ganancia_hoy": f"S/ {ganancia:.2f}",
+                "pedidos_hoy": qs.count(),
+                "productos_stock_bajo": stock_bajo_count,
+                "low_stock_names": low_stock_names, # <--- NUEVO CAMPO
             },
-            "sunat": {
-                "estado": "🟢 En Rango (RUS 1)" if total_ventas < 5000 else "🟡 Cuidado (Límite RUS)",
-                "mensaje": "Proyección fiscal controlada."
-            }
+            "sunat": { "estado": "🟢 En Rango" if total < 5000 else "🟡 Cuidado (Límite RUS)", "mensaje": "Proyección fiscal controlada." }
         })
 
 # =================================================
